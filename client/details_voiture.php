@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Détails — Park DTTS</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
 <nav class="site-nav">
     <a href="/" class="nav-brand">
-        <img src="images/logo.jpeg" alt="Park DTTS">
+        <img src="/images/logo.jpeg" alt="Park DTTS">
         <span class="name">Park <span>DTTS</span></span>
     </a>
     <div class="nav-links">
@@ -24,7 +24,7 @@
 if (!isset($_GET['id'], $_GET['dateDebut'], $_GET['dateFin'])) {
     echo '<div class="card"><p>Paramètres manquants. <a href="/">Retour à l\'accueil</a></p></div>';
 } else {
-    require_once __DIR__ . '/db.php';
+    require_once __DIR__ . '/../db.php';
 
     $id        = intval($_GET['id']);
     $dateDebut = $_GET['dateDebut'];
@@ -40,7 +40,7 @@ if (!isset($_GET['id'], $_GET['dateDebut'], $_GET['dateFin'])) {
         ?>
         <div class="details-card">
             <div class="image-container">
-                <img src="<?= htmlspecialchars($voiture['image']) ?>" alt="<?= htmlspecialchars($voiture['nom']) ?>">
+                <img src="/<?= htmlspecialchars($voiture['image']) ?>" alt="<?= htmlspecialchars($voiture['nom']) ?>">
             </div>
             <div class="details-body">
                 <h1><?= htmlspecialchars($voiture['nom']) ?></h1>
@@ -55,7 +55,7 @@ if (!isset($_GET['id'], $_GET['dateDebut'], $_GET['dateFin'])) {
                 <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">
                     Du <strong><?= htmlspecialchars($dateDebut) ?></strong> au <strong><?= htmlspecialchars($dateFin) ?></strong>
                 </p>
-                <form action="payment.php" method="POST" class="form-reservation">
+                <form action="/client/payment.php" method="POST" class="form-reservation">
                     <input type="hidden" name="id_voiture" value="<?= $id ?>">
                     <input type="hidden" name="dateDebut"  value="<?= htmlspecialchars($dateDebut) ?>">
                     <input type="hidden" name="dateFin"    value="<?= htmlspecialchars($dateFin) ?>">

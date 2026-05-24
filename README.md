@@ -68,12 +68,7 @@ Si XAMPP est actif avec une base MySQL existante, les données sont migrées aut
 ```
 location_voiture/
 ├── index.html              # Accueil — sélection des dates
-├── disponibilite.php       # Voitures disponibles
-├── details_voiture.php     # Fiche véhicule
-├── payment.php             # Formulaire de paiement
-├── confirmation.php        # Confirmation de réservation
-├── login.php               # Login admin (racine)
-├── db.php                  # Connexion PDO SQLite
+├── db.php                  # Connexion PDO SQLite (partagée)
 ├── init_db.php             # Initialisation / migration BDD
 ├── start.bat               # Démarrage du serveur (Windows)
 ├── styles.css              # Styles côté client
@@ -81,6 +76,11 @@ location_voiture/
 ├── images/                 # Photos des véhicules
 ├── firmware/
 │   └── GPSandSensorData.ino  # Firmware Particle Boron (GPS + capteurs)
+├── client/
+│   ├── disponibilite.php   # Voitures disponibles
+│   ├── details_voiture.php # Fiche véhicule
+│   ├── payment.php         # Formulaire de paiement
+│   └── confirmation.php    # Confirmation de réservation
 ├── admin/
 │   ├── index.php           # Tableau de bord
 │   ├── login.php           # Connexion admin

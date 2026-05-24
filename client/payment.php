@@ -3,7 +3,7 @@ if (!isset($_POST['id_voiture'], $_POST['dateDebut'], $_POST['dateFin'])) {
     die("Données manquantes.");
 }
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../db.php';
 
 $id_voiture = intval($_POST['id_voiture']);
 $dateDebut  = $_POST['dateDebut'];
@@ -26,18 +26,18 @@ $total        = $nombre_jours * $prix_jour;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paiement</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Paiement — Park DTTS</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <div class="container1">
         <header>
-            <img src="images/logo.jpeg" alt="Logo" class="logo">
+            <img src="/images/logo.jpeg" alt="Logo" class="logo">
         </header>
         <main>
             <h2>Informations de Paiement</h2>
             <p>Montant total à payer : <span><?php echo number_format($total, 2); ?> Ar</span></p>
-            <form action="confirmation.php" method="POST">
+            <form action="/client/confirmation.php" method="POST">
                 <input type="hidden" name="id_voiture" value="<?php echo $id_voiture; ?>">
                 <input type="hidden" name="dateDebut"  value="<?php echo htmlspecialchars($dateDebut); ?>">
                 <input type="hidden" name="dateFin"    value="<?php echo htmlspecialchars($dateFin); ?>">

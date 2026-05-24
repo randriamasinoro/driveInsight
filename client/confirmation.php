@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirmation — Park DTTS</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
 <nav class="site-nav">
     <a href="/" class="nav-brand">
-        <img src="images/logo.jpeg" alt="Park DTTS">
+        <img src="/images/logo.jpeg" alt="Park DTTS">
         <span class="name">Park <span>DTTS</span></span>
     </a>
 </nav>
@@ -21,7 +21,7 @@
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo '<div class="confirm-box"><div class="icon">🚫</div><h1 style="color:var(--danger)">Accès refusé</h1><p>Cette page n\'est pas accessible directement.</p><a href="/" class="btn-home">Retour à l\'accueil</a></div>';
 } else {
-    require_once __DIR__ . '/db.php';
+    require_once __DIR__ . '/../db.php';
 
     $id_voiture = intval($_POST['id_voiture']);
     $dateDebut  = $_POST['dateDebut'];
