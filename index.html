@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park DTTS — Location de Voitures</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+    <a href="/" class="nav-brand">
+        <img src="images/logo.jpeg" alt="Park DTTS">
+        <span class="name">Park <span>DTTS</span></span>
+    </a>
+    <div class="nav-links">
+        <a href="/admin/login.php" class="btn-admin">Admin</a>
+    </div>
+</nav>
+
+<div class="page-wrapper">
+    <div class="card">
+        <h1>Réservez votre véhicule</h1>
+        <form id="reservationForm" action="disponibilite.php" method="POST">
+            <label for="dateDebut">Date de début</label>
+            <input type="date" id="dateDebut" name="dateDebut" required>
+            <label for="dateFin">Date de fin</label>
+            <input type="date" id="dateFin" name="dateFin" required>
+            <button type="submit">Vérifier la disponibilité</button>
+        </form>
+        <p id="errorMessage" class="error-message" style="display:none"></p>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

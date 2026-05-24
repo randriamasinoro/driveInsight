@@ -1,0 +1,20 @@
+# Base de données SQLite (générée localement)
+location_voiture.sqlite
+.claude/
+# Données temps réel des capteurs (générées par l'ESP32)
+admin/data/coordinates_*.json
+admin/data/distances_*.json
+
+# Système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs PHP
+*.log
