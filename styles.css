@@ -147,6 +147,164 @@ button:active { transform: translateY(0); }
 .btn-home { display: inline-block; padding: 12px 32px; background: var(--primary); color: #fff; border-radius: var(--radius-sm); font-weight: 600; transition: background var(--transition); }
 .btn-home:hover { background: var(--accent); }
 
+/* ── Home — grille de voitures ─────────────────────────────── */
+.home-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+}
+.home-header {
+    text-align: center;
+    margin-bottom: 36px;
+}
+.home-header h1 { font-size: 1.75rem; color: var(--primary); margin-bottom: 8px; }
+.home-header p  { color: var(--muted); font-size: .95rem; }
+
+.cars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 28px;
+}
+
+/* ── Car card ───────────────────────────────────────────────── */
+.car-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    border: 1.5px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+.car-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+
+.car-card__img img { width: 100%; height: 190px; object-fit: cover; }
+
+.car-card__body { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+
+.car-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.car-card__header h2 { font-size: 1.05rem; font-weight: 700; color: var(--text); margin: 0; }
+.car-price {
+    font-size: .88rem; font-weight: 700; color: var(--accent);
+    background: rgba(232,160,32,.12); padding: 3px 10px;
+    border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+}
+.car-price small { font-weight: 500; font-size: .78rem; }
+
+.car-specs { display: flex; gap: 10px; flex-wrap: wrap; }
+.spec {
+    font-size: .78rem; color: var(--muted);
+    background: var(--bg); padding: 3px 9px;
+    border-radius: 20px; border: 1px solid var(--border);
+}
+
+/* ── Calendar section ───────────────────────────────────────── */
+.car-calendar { display: flex; flex-direction: column; gap: 6px; }
+.cal-label { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.date-input {
+    padding: 10px 13px; font-size: .9rem;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    background: #fafbfd; color: var(--text); width: 100%; cursor: pointer;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.date-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,60,110,.1); }
+
+/* ── Summary + Réserver button ──────────────────────────────── */
+.car-summary {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba(26,60,110,.04);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent);
+    animation: fadeIn .22s ease;
+}
+.car-summary.visible { display: flex; }
+.summary-info { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.summary-dates { font-size: .83rem; color: var(--muted); }
+.summary-total { font-size: .97rem; font-weight: 800; color: var(--accent); }
+.btn-reserver {
+    margin: 0; padding: 11px 20px;
+    font-size: .93rem; font-weight: 700; color: #fff;
+    background: var(--primary); border: none; border-radius: var(--radius-sm);
+    cursor: pointer; transition: background var(--transition), transform var(--transition);
+    text-align: center;
+}
+.btn-reserver:hover { background: var(--accent); transform: translateY(-1px); }
+
+/* ── Modal overlay ──────────────────────────────────────────── */
+.modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(10,20,40,.55);
+    backdrop-filter: blur(3px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+
+.modal {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    width: 100%; max-width: 480px;
+    max-height: 90vh; overflow-y: auto;
+    padding: 32px 30px 28px;
+    position: relative;
+    animation: slideUp .25s ease;
+}
+
+.modal-close {
+    position: absolute; top: 14px; right: 16px;
+    background: none; border: none; font-size: 1.3rem;
+    color: var(--muted); cursor: pointer; margin: 0; padding: 4px 8px;
+    border-radius: 6px; transition: background var(--transition), color var(--transition);
+    line-height: 1;
+}
+.modal-close:hover { background: var(--bg); color: var(--text); transform: none; box-shadow: none; }
+
+.modal-car-info { margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1.5px solid var(--border); }
+.modal-car-info h2 { font-size: 1.2rem; color: var(--primary); margin-bottom: 4px; }
+.modal-car-info p  { font-size: .87rem; color: var(--muted); margin-bottom: 2px; }
+.modal-total { font-size: 1.1rem !important; font-weight: 800; color: var(--accent) !important; margin-top: 6px !important; }
+
+/* ── Modal form ─────────────────────────────────────────────── */
+.modal form { gap: 0; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { display: flex; flex-direction: column; margin-top: 12px; }
+.form-group label { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px; }
+.form-group input { margin: 0; }
+#modal-submit { margin-top: 20px; width: 100%; padding: 13px; font-size: 1rem; }
+
+/* ── Modal success ──────────────────────────────────────────── */
+.modal-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px 0 8px;
+    gap: 10px;
+}
+.success-icon { font-size: 3rem; }
+.modal-success h2 { color: #1dac6e; font-size: 1.3rem; }
+.modal-success p  { color: var(--muted); font-size: .9rem; line-height: 1.5; }
+.btn-ok {
+    margin-top: 8px; padding: 11px 36px;
+    background: var(--primary); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    font-size: .97rem; font-weight: 700; cursor: pointer;
+    transition: background var(--transition);
+}
+.btn-ok:hover { background: var(--accent); transform: none; box-shadow: none; }
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideUp { from { transform: translateY(24px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 640px) {
     .site-nav { padding: 0 16px; }
@@ -155,4 +313,8 @@ button:active { transform: translateY(0); }
     .car-list { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
     .infos-grid { grid-template-columns: 1fr 1fr; }
     .login-container { margin: 24px 16px; padding: 28px 20px; }
+    .home-main { padding: 24px 16px 48px; }
+    .cars-grid { grid-template-columns: 1fr; gap: 18px; }
+    .form-row-2 { grid-template-columns: 1fr; }
+    .modal { padding: 24px 18px 20px; }
 }

@@ -1,0 +1,360 @@
+---
+title: "DriveInsight — Système de gestion de parc automobile connecté"
+date: "2025"
+tags: ["PHP", "SQLite", "IoT", "Particle Boron", "GPS", "Embedded Systems"]
+context: "Projet de Fin d'Études — L3 Génie des Systèmes Automatisés, Institut de Technologie d'Antananarivo"
+---
+
+# DriveInsight
+
+**Système de gestion de parc automobile avec suivi IoT en temps réel**
+
+Projet de Fin d'Études — L3 Génie des Systèmes Automatisés
+Institut de Technologie d'Antananarivo (ITA) · Madagascar · 2025
+
+---
+
+## Contexte
+
+La gestion d'un parc automobile de location repose encore aujourd'hui, dans de nombreuses
+structures malgaches, sur des outils peu adaptés : tableurs, registres papier, appels téléphoniques
+pour vérifier la disponibilité d'un véhicule. Le suivi de l'état mécanique et de la position des
+voitures en déplacement est quasiment inexistant.
+
+DriveInsight est né de ce constat. L'idée centrale : **fusionner une plateforme web de réservation
+avec un système embarqué de télémétrie**, afin de donner à un gestionnaire de flotte une vision
+complète, en temps réel, de son parc — depuis l'état de charge de la batterie d'un véhicule
+jusqu'à sa position GPS sur la carte.
+
+Ce projet est l'aboutissement de trois ans de formation en Génie des Systèmes Automatisés,
+à l'intersection du développement logiciel, de l'électronique embarquée et des réseaux de
+communication.
+
+---
+
+## Ce que fait le système
+
+DriveInsight se compose de deux couches qui communiquent en continu.
+
+### La plateforme web — côté client
+
+L'interface présente l'ensemble du parc automobile dès la page d'accueil. Chaque véhicule
+dispose d'un calendrier de disponibilité interactif (Flatpickr) : les dates déjà réservées
+apparaissent grisées, et la sélection d'une plage déclenche immédiatement le calcul du tarif.
+La réservation se finalise en quelques secondes via une fenêtre modale, sans changer de page.
+La double vérification de disponibilité — côté client par le calendrier, côté serveur avant
+insertion — empêche les conflits de réservation simultanée.
+
+### La plateforme web — côté administrateur
+
+Le tableau de bord distingue trois états : véhicules actuellement en location, réservations à
+venir (toutes, par ordre chronologique), et véhicules disponibles. Un compteur dédié à chacun
+de ces états est affiché en en-tête. L'administrateur peut :
+
+- **Supprimer une réservation** en cours ou à venir directement depuis le tableau de bord,
+  avec confirmation avant exécution.
+- **Ajouter un véhicule** au parc via une modale (nom, tarif, caractéristiques, photo) sans
+  quitter l'interface.
+- **Accéder au suivi temps réel** d'un véhicule en location : position GPS sur carte
+  interactive et état des capteurs embarqués.
+
+### Le module embarqué
+
+Chaque voiture du parc est équipée d'une carte **Particle Boron**, un microcontrôleur
+conçu pour la connectivité cellulaire, ici configuré pour l'opérateur malgache Telma.
+Le Boron centralise trois flux de données :
+
+- **Position GPS** — un module NMEA envoie les coordonnées toutes les 10 secondes.
+  La trajectoire s'affiche sur une carte interactive (MapTiler SDK) dans le dashboard admin.
+
+- **Niveau de carburant** — lu par un capteur analogique externe, converti en pourcentage
+  (0–100 %) via un mapping de la plage ADC 12 bits du Boron.
+
+- **État mécanique** — niveau d'huile moteur et tension de la batterie (0–15 V),
+  remontés toutes les 5 secondes vers le serveur.
+
+Ces trois capteurs sont **externes et câblés manuellement** sur chaque véhicule. Ils
+mesurent des grandeurs physiques directement (tension, résistance), indépendamment
+de l'électronique embarquée du véhicule. C'est une approche volontairement simple pour
+le prototype, mais qui laisse de côté la richesse des données déjà disponibles à l'intérieur
+du véhicule via son réseau interne.
+
+Ces données transitent par requêtes HTTP vers deux endpoints PHP qui les stockent
+dans des fichiers JSON horodatés, accessibles immédiatement par l'interface d'administration.
+
+---
+
+## Architecture technique
+
+```
+┌──────────────────────────────────────┐
+│            Particle Boron            │  ← embarqué dans chaque véhicule
+│  GPS · Capteur carburant · Huile     │
+│  Batterie · Réseau Telma (cellulaire)│
+└────────────────┬─────────────────────┘
+                 │ HTTP GET (toutes les 5–10s)
+                 ▼
+┌──────────────────────────────────────┐
+│       Serveur PHP 8.3 (built-in)     │
+│  /api/disponibilite.php              │
+│  /api/reserver.php                   │
+│  /admin/api/location.php             │
+│  /admin/api/capteurs.php             │
+│  /admin/ajouter_voiture.php          │
+│  /admin/supprimer_reservation.php    │
+│                                      │
+│  SQLite 3 (PDO)                      │
+│  ├── voitures                        │
+│  ├── clients                         │
+│  ├── reservations                    │
+│  ├── capteurs                        │
+│  └── maintenances                    │
+└──────────┬───────────────────────────┘
+           │
+    ┌──────┴──────┐
+    ▼             ▼
+Interface     Interface
+  client       admin
+(réservation) (suivi IoT
+  + modale)    + gestion parc)
+```
+
+Le choix de SQLite — au lieu d'un MySQL classique — est délibéré : il élimine toute dépendance
+à un service externe et rend le système déployable sur n'importe quelle machine disposant de PHP,
+y compris dans des environnements à connectivité limitée.
+
+---
+
+## Défis techniques résolus
+
+### Synchronisation IoT → Web sans WebSocket
+
+La contrainte principale était d'afficher des données en temps quasi-réel sans infrastructure
+complexe. La solution adoptée : le Boron pousse ses données en HTTP GET vers des fichiers
+JSON côté serveur. L'interface admin interroge ces fichiers via du polling JavaScript à
+intervalle régulier. Simple, robuste, sans dépendance à un broker MQTT ou à des WebSockets.
+
+### Calendrier de disponibilité concurrent
+
+La vérification de disponibilité utilise une logique de chevauchement d'intervalles :
+un véhicule est indisponible si une réservation existante satisfait
+`date_debut_existante < date_fin_demandée AND date_fin_existante > date_debut_demandée`.
+Cette contrainte est vérifiée à deux niveaux — côté client via Flatpickr (dates grisées)
+et côté serveur avant chaque insertion — pour éviter les conditions de course.
+La page se recharge automatiquement après confirmation d'une réservation, garantissant
+que le calendrier reflète immédiatement la nouvelle indisponibilité.
+
+### Cohérence de la vue admin avec plusieurs réservations par véhicule
+
+La première version du tableau de bord utilisait un `LEFT JOIN … LIMIT 1` qui ne remontait
+qu'une réservation par véhicule : les réservations futures d'un véhicule déjà en cours de
+location disparaissaient silencieusement. La solution retenue sépare les données en trois
+requêtes indépendantes (en cours, à venir, disponibles), permettant à un même véhicule
+d'apparaître dans plusieurs sections sans ambiguïté.
+
+### Mapping ADC sur Particle Boron
+
+Le Boron expose un ADC 12 bits (plage 0–4095). La conversion vers des unités métier
+(pourcentage de carburant, tension en volts) est réalisée avec la fonction `map()` de l'API
+Particle, après correction d'un bug de nommage entre les paramètres du firmware et
+les endpoints PHP — un cas typique de débogage hardware/software en intégration système.
+
+### Configuration réseau cellulaire
+
+Le Boron utilise le réseau cellulaire via l'APN Telma (`telmanet`). Une contrainte critique :
+la configuration de l'APN doit impérativement précéder `Particle.connect()`, au risque d'une
+connexion silencieusement établie sur le mauvais réseau — un bug identifié et documenté
+pendant la phase de tests terrain.
+
+---
+
+## Résultat
+
+Le système couvre l'intégralité du cycle de vie d'une location : de la consultation des
+disponibilités par le client jusqu'au retour du véhicule, en passant par la surveillance
+continue de la flotte. Il remplace un processus manuel fragmenté par une interface unifiée,
+accessible depuis un navigateur, sans dépendance à un service cloud.
+
+Le module embarqué fonctionne de manière autonome : une fois flashé et alimenté, le Boron
+se connecte au réseau cellulaire et commence à transmettre ses données sans aucune
+intervention.
+
+---
+
+## Limites du système actuel
+
+Plusieurs contraintes délibérées ont été acceptées dans le cadre d'un projet de fin d'études,
+et constituent autant de points d'entrée pour une évolution future.
+
+**Authentification minimale.**
+L'espace administrateur repose sur un identifiant et un mot de passe stockés en clair dans
+SQLite. Il n'y a qu'un seul compte admin, sans gestion de rôles ni de sessions sécurisées
+par token. Une compromission du fichier de base de données suffit à accéder aux
+identifiants.
+
+**Absence de paiement réel.**
+Le tunnel de réservation se termine à la saisie des informations client. Aucune transaction
+financière n'est effectuée : le système enregistre la réservation sans vérifier ni encaisser
+le montant dû. Dans un contexte de production, cela signifie qu'une réservation peut être
+créée sans garantie de paiement.
+
+**Persistance IoT non structurée.**
+Les données de capteurs et de GPS sont stockées dans des fichiers JSON plats, un fichier
+par véhicule. Cette approche ne permet pas de requêtes temporelles, de calcul de moyennes
+sur une période, ni d'alertes basées sur des seuils historiques. Au-delà d'un certain volume,
+la lecture séquentielle du fichier devient coûteuse.
+
+**Scalabilité serveur.**
+Le serveur intégré de PHP (`php -S`) est mono-thread : il ne traite qu'une requête à la fois.
+Avec plusieurs Boron envoyant des données simultanément et des clients consultant le site,
+des collisions sont possibles. Ce mode est adapté au prototypage et à la démonstration,
+pas à un déploiement multi-utilisateurs.
+
+**Pas de notification ni d'alerte.**
+L'administrateur doit consulter activement le tableau de bord pour savoir si un véhicule
+est à court de carburant, si sa batterie est critique, ou si une réservation commence
+dans les prochaines heures. Aucun mécanisme de notification proactive n'existe.
+
+**Sécurité des endpoints IoT.**
+Les routes `/admin/api/location.php` et `/admin/api/capteurs.php` acceptent n'importe quelle
+requête GET sans authentification. Un acteur malveillant connaissant l'URL peut injecter
+de fausses données de position ou de capteurs.
+
+**Capteurs externes, non intégrés au réseau interne du véhicule.**
+Les trois grandeurs mesurées (carburant, huile, batterie) sont lues par des capteurs
+analogiques câblés manuellement, indépendants de l'électronique du véhicule. Cette approche
+fonctionne, mais elle est moins précise que les données issues du calculateur du véhicule,
+plus difficile à installer de façon fiable sur chaque modèle, et surtout elle ignore
+l'ensemble des informations déjà disponibles sur le **bus CAN** du véhicule : régime moteur,
+température de refroidissement, codes défauts, kilométrage réel, position de l'accélérateur,
+pression des pneus, et bien d'autres.
+
+---
+
+## Perspectives d'amélioration
+
+### Système de paiement intégré
+
+L'intégration d'une passerelle de paiement est la priorité fonctionnelle la plus directe.
+Dans le contexte malgache, deux approches sont pertinentes :
+
+- **Mobile Money** (MVola, Orange Money, Airtel Money) — dominant en Madagascar, il
+  permettrait aux clients de payer depuis leur téléphone sans carte bancaire, via une API
+  de confirmation par SMS ou webhook.
+- **Stripe ou PayDunya** pour les clients disposant d'une carte internationale.
+
+Le flux serait : sélection des dates → calcul du montant → redirection vers la passerelle →
+webhook de confirmation → écriture de la réservation en base uniquement si paiement validé.
+Cela transformerait la réservation d'un acte déclaratif en un engagement financier réel.
+
+### Intégration du bus CAN via OBD-II
+
+C'est probablement l'évolution la plus structurante sur la partie embarquée. Tout véhicule
+moderne (post-2001 en Europe, quasi-universel au parc malgache récent) dispose d'un port
+**OBD-II** (On-Board Diagnostics, ISO 15765-4), qui donne accès au **bus CAN** interne
+du véhicule — le réseau qui relie entre eux tous les calculateurs électroniques (moteur,
+boîte, freins, tableau de bord).
+
+Via ce port, un seul connecteur standardisé remplacerait les trois capteurs câblés
+manuellement et exposerait une cinquantaine de paramètres supplémentaires en temps réel :
+
+| Paramètre OBD-II | PID | Intérêt pour DriveInsight |
+|---|---|---|
+| Régime moteur (RPM) | 0x0C | Détecter conduite agressive |
+| Vitesse véhicule | 0x0D | Calculer kilométrage réel |
+| Température liquide refroidissement | 0x05 | Alerte surchauffe moteur |
+| Position accélérateur | 0x11 | Profil de conduite |
+| Charge moteur calculée | 0x04 | Corrélation consommation |
+| Niveau carburant (ECU) | 0x2F | Plus précis que capteur analogique |
+| Codes défauts (DTC) | Mode 03 | Maintenance prédictive |
+| Kilométrage total | 0xA6 | Suivi entretien, facturation km |
+| Tension batterie | 0x42 | Directement depuis l'ECU |
+
+**Mise en œuvre avec le Boron.** L'interface entre le Boron et le bus CAN passerait par
+un transceiver **MCP2515** (contrôleur CAN SPI) couplé à un **TJA1050** (driver physique
+CAN), connectés au bus SPI du Boron. Le Boron envoie des requêtes OBD-II (trames CAN
+avec identifiant 0x7DF), le calculateur du véhicule répond sur 0x7E8, et le Boron décode
+la réponse selon les formules de conversion des PIDs standard SAE J1979.
+
+```
+Boron SPI ─── MCP2515 ─── TJA1050 ─── OBD-II (pin 6/14) ─── CAN bus véhicule
+```
+
+Par rapport à l'approche actuelle (capteurs analogiques câblés), l'intégration OBD-II est
+**plus précise** (données issues du calculateur lui-même), **universellement compatible**
+(même connecteur sur tous les véhicules OBD-II), et **non intrusive** (aucune modification
+physique du véhicule).
+
+### Maintenance prédictive
+
+Avec les données brutes des capteurs actuels et, à terme, celles du bus CAN, l'étape
+suivante consiste à les exploiter intelligemment plutôt que de simplement les afficher.
+
+À court terme : des **seuils d'alerte configurables** déclencheraient une notification
+(email, SMS via SMS Gasy ou un webhook) dès que le carburant passe sous 15 %, que la tension
+batterie descend sous 11,5 V, ou que la température moteur dépasse 105 °C.
+
+À moyen terme : en accumulant l'historique dans une table SQLite structurée
+(`horodatage`, `id_voiture`, `pid`, `valeur`), il devient possible de détecter des tendances
+— une baisse anormalement rapide du niveau d'huile entre deux locations (signe de fuite),
+une température moteur systématiquement élevée sur un véhicule, ou une corrélation entre
+la consommation et le kilométrage GPS révélant un moteur dégradé.
+
+La lecture des **codes défauts DTC** (mode 03 OBD-II) ouvre une dimension différente :
+plutôt que d'inférer un problème depuis des métriques physiques, on lit directement ce que
+le calculateur a diagnostiqué. Un DTC `P0300` (ratés d'allumage) ou `P0171` (mélange
+pauvre) remonterait immédiatement dans le tableau de bord admin, même si le voyant moteur
+n'est pas encore allumé pour le locataire.
+
+À plus long terme, un modèle de régression entraîné sur l'historique permettrait
+d'**anticiper la date de prochaine vidange** à partir du kilométrage réel et du régime
+moteur cumulé, ou de **prévoir une défaillance batterie** avant qu'elle immobilise un
+véhicule en pleine location.
+
+### Historique des trajets et rapport de location
+
+Chaque position GPS est aujourd'hui écrasée par la suivante. Stocker l'intégralité de la
+trajectoire (table `positions` avec horodatage) permettrait, à la fin d'une location, de
+générer un **rapport de trajet** : kilométrage parcouru, zones visitées, vitesse moyenne
+estimée, durée d'immobilisation. Ce rapport serait utile pour facturer les kilomètres
+supplémentaires, détecter les usages hors zone autorisée, ou en cas de litige.
+
+### Application mobile pour le client
+
+L'interface web actuelle est responsive mais reste un site mobile. Une application native
+(React Native ou Flutter) apporterait : notifications push pour rappeler une réservation
+imminente, accès hors ligne au récapitulatif de location, et scan de QR code pour
+l'identification rapide du véhicule à la prise en charge.
+
+### Tableau de bord analytique pour le gestionnaire
+
+Avec l'historique des réservations, des métriques de pilotage deviennent calculables :
+taux d'occupation par véhicule sur une période, revenu mensuel par véhicule, véhicule
+le plus demandé, pics de réservation saisonniers. Ces indicateurs permettraient d'optimiser
+la taille du parc et la politique tarifaire.
+
+### Authentification et gestion des rôles
+
+Remplacer le système actuel par une authentification robuste (hachage bcrypt des mots de
+passe, tokens de session régénérés, politique CSRF) et introduire plusieurs niveaux de
+rôles : super-admin (gestion du parc, des comptes), opérateur (consultation du tableau de
+bord, traitement des réservations), technicien (accès aux données capteurs et maintenance
+uniquement).
+
+---
+
+## Stack
+
+| Couche | Technologie |
+|---|---|
+| Backend | PHP 8.3 · SQLite 3 (PDO) |
+| Frontend | HTML5 · CSS3 · JavaScript vanilla · Flatpickr |
+| Cartographie | MapTiler SDK v2 |
+| Embarqué | Particle Boron · TinyGPS++ · HttpClient |
+| Réseau IoT | Cellulaire — Telma Madagascar (APN `telmanet`) |
+| Capteurs | ADC analogique externe — carburant, huile, batterie (12 bits, 0–4095) |
+| Évolution prévue | Bus CAN via OBD-II — MCP2515 (SPI) + TJA1050 + PIDs SAE J1979 |
+
+---
+
+*Elisa Randriamasinoro — L3 Génie des Systèmes Automatisés · IST - Antananarivo · 2024*
