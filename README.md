@@ -230,4 +230,4 @@ GET /admin/api/capteurs.php?id_voiture=1&distance1=75&distance2=90&distance3=13
 
 ## Auteur
 
-Elisa Randriamasinoro — L3 Génie des Systèmes Automatisés · ITA Antananarivo · 2025
+Elisa Randriamasinoro — L3 Génie des Systèmes Automatisés · IST-Antananarivo · 2024
